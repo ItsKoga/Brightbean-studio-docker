@@ -24,17 +24,18 @@ Images are `linux/amd64` only.
 
 ## Unraid
 
-**Option A – template repository:** *Docker → Template Repositories*, add
+Open a terminal on the Unraid server (*>_* icon in the top bar, or SSH) and download the template:
 
+```bash
+cd /boot/config/plugins/dockerMan/templates-user
+wget -O my-brightbean-studio.xml https://raw.githubusercontent.com/ItsKoga/Brightbean-studio-docker/main/unraid/brightbean-studio.xml
 ```
-https://github.com/ItsKoga/Brightbean-studio-docker
-```
 
-then *Add Container* → pick **brightbean-studio**.
-
-**Option B – manual:** copy [`unraid/brightbean-studio.xml`](unraid/brightbean-studio.xml) to `/boot/config/plugins/dockerMan/templates-user/my-brightbean-studio.xml` and pick it under *Add Container*.
+Then go to *Docker → Add Container*, choose **brightbean-studio** under *Template* (in the user templates section), adjust the values and click *Apply*.
 
 Set at least `APP_URL` (for example `http://192.168.1.10:8000`, or your `https://` domain behind a reverse proxy).
+
+Re-running the `wget` command fetches the latest template but overwrites the values saved for an existing container, so note your settings first.
 
 ## Docker / Compose
 
