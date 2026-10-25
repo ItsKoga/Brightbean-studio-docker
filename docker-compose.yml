@@ -1,0 +1,38 @@
+services:
+  brightbean-studio:
+    image: ghcr.io/itskoga/brightbean-studio:latest
+    container_name: brightbean-studio
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # Public URL users and OAuth callbacks reach. Use https:// behind a reverse proxy.
+      APP_URL: http://localhost:8000
+      # Comma separated; defaults to APP_URL's host + localhost.
+      # ALLOWED_HOSTS: studio.example.com,192.168.1.10
+      SIGNUP_MODE: open
+      TZ: Europe/Berlin
+      PUID: "1000"
+      PGID: "1000"
+      # Leave unset to use the embedded PostgreSQL in /config/postgres.
+      # DATABASE_URL: postgres://brightbean:secret@postgres:5432/brightbean
+      # SMTP (without EMAIL_HOST mails are only printed to the log)
+      # EMAIL_HOST: smtp.example.com
+      # EMAIL_PORT: "587"
+      # EMAIL_HOST_USER: ""
+      # EMAIL_HOST_PASSWORD: ""
+      # DEFAULT_FROM_EMAIL: noreply@example.com
+    volumes:
+      - ./data/config:/config
+      - ./data/media:/app/media
+
+  # Optional external database instead of the embedded one:
+  # postgres:
+  #   image: postgres:16-alpine
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_DB: brightbean
+  #     POSTGRES_USER: brightbean
+  #     POSTGRES_PASSWORD: secret
+  #   volumes:
+  #     - ./data/postgres:/var/lib/postgresql/data

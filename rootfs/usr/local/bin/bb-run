@@ -1,0 +1,17 @@
+#!/bin/bash
+# Run a service as $APP_USER once the database accepts connections.
+set -euo pipefail
+
+# shellcheck disable=SC1091
+[ -r /run/brightbean/env ] && . /run/brightbean/env
+
+until pg_isready -q -d "$DATABASE_URL"; do
+    echo "[bb-run] waiting for database..."
+    sleep 2
+done
+
+cd /app
+if [ "$APP_USER" = root ]; then
+    exec "$@"
+fi
+exec gosu "$APP_USER" "$@"

@@ -1,0 +1,7 @@
+upstream/
+.data/
+data/
+.git/
+.github/
+unraid/
+*.md

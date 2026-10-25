@@ -1,0 +1,139 @@
+name: Build image
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "unraid/**"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Build even if upstream has not changed
+        type: boolean
+        default: false
+
+concurrency:
+  group: build
+  cancel-in-progress: false
+
+env:
+  UPSTREAM_REPO: brightbeanxyz/brightbean-studio
+  UPSTREAM_BRANCH: main
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: read
+    outputs:
+      build: ${{ steps.decide.outputs.build }}
+      sha: ${{ steps.upstream.outputs.sha }}
+      image: ${{ steps.upstream.outputs.image }}
+    steps:
+      - name: Resolve upstream commit
+        id: upstream
+        run: |
+          sha=$(git ls-remote "https://github.com/${UPSTREAM_REPO}.git" "refs/heads/${UPSTREAM_BRANCH}" | cut -f1)
+          [ -n "$sha" ] || { echo "could not resolve upstream"; exit 1; }
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/brightbean-studio" >> "$GITHUB_OUTPUT"
+          echo "Upstream ${UPSTREAM_BRANCH}: $sha"
+
+      - name: Decide whether to build
+        id: decide
+        env:
+          SHA: ${{ steps.upstream.outputs.sha }}
+          IMAGE: ${{ steps.upstream.outputs.image }}
+          FORCE: ${{ inputs.force }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != "schedule" ] || [ "$FORCE" = "true" ]; then
+            echo "build=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          current=$(skopeo inspect --creds "${GITHUB_ACTOR}:${TOKEN}" "docker://${IMAGE}:latest" 2>/dev/null \
+            | jq -r '.Labels["io.brightbean.upstream.revision"] // empty' || true)
+          echo "Published image built from: ${current:-<none>}"
+          if [ "$current" = "$SHA" ]; then
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: check
+    if: needs.check.outputs.build == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      SHA: ${{ needs.check.outputs.sha }}
+      IMAGE: ${{ needs.check.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check out upstream
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.UPSTREAM_REPO }}
+          ref: ${{ needs.check.outputs.sha }}
+          path: upstream
+
+      - name: Compute tags
+        id: tags
+        run: |
+          short=${SHA:0:7}
+          tags="${IMAGE}:latest ${IMAGE}:sha-${short} ${IMAGE}:$(date -u +%Y%m%d)"
+          # If upstream ever tags this commit (e.g. v1.2.0), publish that too.
+          for t in $(git ls-remote --tags "https://github.com/${UPSTREAM_REPO}.git" | awk -v s="$SHA" '$1==s {print $2}' | sed 's#refs/tags/##; s#\^{}##' | sort -u); do
+            tags="$tags ${IMAGE}:${t}"
+          done
+          echo "tags=$tags" >> "$GITHUB_OUTPUT"
+          echo "$tags"
+
+      - name: Build upstream base image
+        run: docker build --platform linux/amd64 -t brightbean-studio-base:local upstream
+
+      - name: Build all-in-one image
+        run: |
+          docker build --platform linux/amd64 \
+            --build-arg BASE_IMAGE=brightbean-studio-base:local \
+            --build-arg UPSTREAM_SHA="$SHA" \
+            --label org.opencontainers.image.source="https://github.com/${GITHUB_REPOSITORY}" \
+            --label org.opencontainers.image.created="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --label org.opencontainers.image.version="sha-${SHA:0:7}" \
+            -t brightbean-studio:test .
+
+      - name: Smoke test
+        run: |
+          docker run -d --name smoke -p 8000:8000 brightbean-studio:test
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8000/health/ >/dev/null; then
+              echo "healthy after $((i*3))s"
+              curl -fsS -o /dev/null -w "login page: %{http_code}\n" http://127.0.0.1:8000/accounts/login/ || true
+              docker logs smoke | tail -n 30
+              exit 0
+            fi
+            sleep 3
+          done
+          docker logs smoke
+          exit 1
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push
+        env:
+          TAGS: ${{ steps.tags.outputs.tags }}
+        run: |
+          for t in $TAGS; do
+            docker tag brightbean-studio:test "$t"
+            docker push "$t"
+          done

@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>brightbean-studio</Name>
+  <Repository>ghcr.io/itskoga/brightbean-studio:latest</Repository>
+  <Registry>https://github.com/ItsKoga/Brightbean-studio-docker/pkgs/container/brightbean-studio</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/ItsKoga/Brightbean-studio-docker/issues</Support>
+  <Project>https://github.com/brightbeanxyz/brightbean-studio</Project>
+  <Overview>Brightbean Studio - open-source, self-hostable social media management platform. Schedule, publish and manage content across 10+ platforms (Facebook, Instagram, Threads, LinkedIn, TikTok, YouTube, Pinterest, ...) from a single dashboard.[br][br]All-in-one image: web app, publishing worker and an embedded PostgreSQL 16 (stored in /config). Set DATABASE_URL to use an external PostgreSQL instead.[br][br]SECRET_KEY and ENCRYPTION_KEY_SALT are generated on first start and kept in /config/secrets.env - back up /config![br][br]OAuth logins to social platforms require a public HTTPS URL: put the container behind a reverse proxy (SWAG, Nginx Proxy Manager, Cloudflare Tunnel) and set APP_URL to that https:// address.</Overview>
+  <Category>Productivity: Tools: Network:Web</Category>
+  <WebUI>http://[IP]:[PORT:8000]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/ItsKoga/Brightbean-studio-docker/main/unraid/brightbean-studio.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/brightbeanxyz/brightbean-studio/main/static/favicon/web-app-manifest-512x512.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <Requires/>
+  <Config Name="WebUI Port" Target="8000" Default="8000" Mode="tcp" Description="Web interface port" Type="Port" Display="always" Required="true" Mask="false">8000</Config>
+  <Config Name="Config / Database" Target="/config" Default="/mnt/user/appdata/brightbean-studio/config" Mode="rw" Description="Embedded PostgreSQL data and generated secrets (secrets.env)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/brightbean-studio/config</Config>
+  <Config Name="Media" Target="/app/media" Default="/mnt/user/appdata/brightbean-studio/media" Mode="rw" Description="Uploaded images and videos" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/brightbean-studio/media</Config>
+
+  <Config Name="APP_URL" Target="APP_URL" Default="http://192.168.1.10:8000" Mode="" Description="Public URL of this instance, e.g. https://studio.example.com behind a reverse proxy, or http://UNRAID-IP:8000 for LAN only" Type="Variable" Display="always" Required="true" Mask="false">http://192.168.1.10:8000</Config>
+  <Config Name="ALLOWED_HOSTS" Target="ALLOWED_HOSTS" Default="" Mode="" Description="Comma separated host names/IPs the app answers to. Empty = host of APP_URL + localhost" Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="SIGNUP_MODE" Target="SIGNUP_MODE" Default="open|invite|closed" Mode="" Description="Who may create an account: open (anyone), invite (invitation link only), closed (admin only)" Type="Variable" Display="always" Required="true" Mask="false">open</Config>
+  <Config Name="TZ" Target="TZ" Default="Europe/Berlin" Mode="" Description="Time zone" Type="Variable" Display="always" Required="false" Mask="false">Europe/Berlin</Config>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User ID the services run as" Type="Variable" Display="advanced" Required="true" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID the services run as" Type="Variable" Display="advanced" Required="true" Mask="false">100</Config>
+
+  <Config Name="DATABASE_URL" Target="DATABASE_URL" Default="" Mode="" Description="External PostgreSQL, e.g. postgres://user:pass@192.168.1.10:5432/brightbean. Empty = embedded PostgreSQL 16 in /config/postgres" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="SECRET_KEY" Target="SECRET_KEY" Default="" Mode="" Description="Django secret key. Empty = generated once and stored in /config/secrets.env" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="ENCRYPTION_KEY_SALT" Target="ENCRYPTION_KEY_SALT" Default="" Mode="" Description="Salt for encrypting stored platform tokens. Empty = generated once. NEVER change it afterwards" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="SECURE_SSL_REDIRECT" Target="SECURE_SSL_REDIRECT" Default="false|true" Mode="" Description="Redirect HTTP to HTTPS (only when served via HTTPS reverse proxy)" Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+  <Config Name="GUNICORN_WORKERS" Target="GUNICORN_WORKERS" Default="2" Mode="" Description="Web worker processes (~250 MB RAM each)" Type="Variable" Display="advanced" Required="false" Mask="false">2</Config>
+  <Config Name="CUSTOM_SIGNUP_URL" Target="CUSTOM_SIGNUP_URL" Default="" Mode="" Description="Optional URL/path the Sign up links point to" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+
+  <Config Name="EMAIL_HOST" Target="EMAIL_HOST" Default="" Mode="" Description="SMTP server. Empty = e-mails are only written to the container log" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="EMAIL_PORT" Target="EMAIL_PORT" Default="587" Mode="" Description="SMTP port" Type="Variable" Display="advanced" Required="false" Mask="false">587</Config>
+  <Config Name="EMAIL_HOST_USER" Target="EMAIL_HOST_USER" Default="" Mode="" Description="SMTP user" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="EMAIL_HOST_PASSWORD" Target="EMAIL_HOST_PASSWORD" Default="" Mode="" Description="SMTP password" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="EMAIL_USE_TLS" Target="EMAIL_USE_TLS" Default="true|false" Mode="" Description="Use STARTTLS" Type="Variable" Display="advanced" Required="false" Mask="false">true</Config>
+  <Config Name="DEFAULT_FROM_EMAIL" Target="DEFAULT_FROM_EMAIL" Default="noreply@example.com" Mode="" Description="Sender address" Type="Variable" Display="advanced" Required="false" Mask="false">noreply@example.com</Config>
+
+  <Config Name="GOOGLE_AUTH_CLIENT_ID" Target="GOOGLE_AUTH_CLIENT_ID" Default="" Mode="" Description="Google login for users (optional)" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="GOOGLE_AUTH_CLIENT_SECRET" Target="GOOGLE_AUTH_CLIENT_SECRET" Default="" Mode="" Description="Google login for users (optional)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="PLATFORM_FACEBOOK_APP_ID" Target="PLATFORM_FACEBOOK_APP_ID" Default="" Mode="" Description="Facebook / Instagram via Facebook Login" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="PLATFORM_FACEBOOK_APP_SECRET" Target="PLATFORM_FACEBOOK_APP_SECRET" Default="" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="PLATFORM_FACEBOOK_CONFIG_ID" Target="PLATFORM_FACEBOOK_CONFIG_ID" Default="" Mode="" Description="Optional, for agency onboarding" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="PLATFORM_INSTAGRAM_APP_ID" Target="PLATFORM_INSTAGRAM_APP_ID" Default="" Mode="" Description="Instagram Login" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="PLATFORM_INSTAGRAM_APP_SECRET" Target="PLATFORM_INSTAGRAM_APP_SECRET" Default="" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="PLATFORM_THREADS_APP_ID" Target="PLATFORM_THREADS_APP_ID" Default="" Mode="" Description="Threads App ID (not the Facebook App ID)" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="PLATFORM_THREADS_APP_SECRET" Target="PLATFORM_THREADS_APP_SECRET" Default="" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="PLATFORM_LINKEDIN_PERSONAL_CLIENT_ID" Target="PLATFORM_LINKEDIN_PERSONAL_CLIENT_ID" Default="" Mode="" Description="LinkedIn personal profiles" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="PLATFORM_LINKEDIN_PERSONAL_CLIENT_SECRET" Target="PLATFORM_LINKEDIN_PERSONAL_CLIENT_SECRET" Default="" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="PLATFORM_LINKEDIN_COMPANY_CLIENT_ID" Target="PLATFORM_LINKEDIN_COMPANY_CLIENT_ID" Default="" Mode="" Description="LinkedIn company pages (Community Management API)" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="PLATFORM_LINKEDIN_COMPANY_CLIENT_SECRET" Target="PLATFORM_LINKEDIN_COMPANY_CLIENT_SECRET" Default="" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="PLATFORM_TIKTOK_CLIENT_KEY" Target="PLATFORM_TIKTOK_CLIENT_KEY" Default="" Mode="" Description="TikTok" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="PLATFORM_TIKTOK_CLIENT_SECRET" Target="PLATFORM_TIKTOK_CLIENT_SECRET" Default="" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="PLATFORM_GOOGLE_CLIENT_ID" Target="PLATFORM_GOOGLE_CLIENT_ID" Default="" Mode="" Description="YouTube / Google Business" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="PLATFORM_GOOGLE_CLIENT_SECRET" Target="PLATFORM_GOOGLE_CLIENT_SECRET" Default="" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="PLATFORM_PINTEREST_APP_ID" Target="PLATFORM_PINTEREST_APP_ID" Default="" Mode="" Description="Pinterest" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="PLATFORM_PINTEREST_APP_SECRET" Target="PLATFORM_PINTEREST_APP_SECRET" Default="" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="UNSPLASH_ACCESS_KEY" Target="UNSPLASH_ACCESS_KEY" Default="" Mode="" Description="Optional stock-photo search in the composer" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="FACEBOOK_WEBHOOK_VERIFY_TOKEN" Target="FACEBOOK_WEBHOOK_VERIFY_TOKEN" Default="" Mode="" Description="Inbound webhooks (optional)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="INSTAGRAM_LOGIN_WEBHOOK_VERIFY_TOKEN" Target="INSTAGRAM_LOGIN_WEBHOOK_VERIFY_TOKEN" Default="" Mode="" Description="Inbound webhooks (optional)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="YOUTUBE_WEBHOOK_SECRET" Target="YOUTUBE_WEBHOOK_SECRET" Default="" Mode="" Description="Inbound webhooks (optional)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+
+  <Config Name="STORAGE_BACKEND" Target="STORAGE_BACKEND" Default="local|s3" Mode="" Description="Where media is stored" Type="Variable" Display="advanced" Required="false" Mask="false">local</Config>
+  <Config Name="S3_ENDPOINT_URL" Target="S3_ENDPOINT_URL" Default="" Mode="" Description="S3 only" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="S3_ACCESS_KEY_ID" Target="S3_ACCESS_KEY_ID" Default="" Mode="" Description="S3 only" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="S3_SECRET_ACCESS_KEY" Target="S3_SECRET_ACCESS_KEY" Default="" Mode="" Description="S3 only" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="S3_BUCKET_NAME" Target="S3_BUCKET_NAME" Default="" Mode="" Description="S3 only" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="S3_CUSTOM_DOMAIN" Target="S3_CUSTOM_DOMAIN" Default="" Mode="" Description="S3 only" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="S3_REGION_NAME" Target="S3_REGION_NAME" Default="auto" Mode="" Description="S3 only" Type="Variable" Display="advanced" Required="false" Mask="false">auto</Config>
+</Container>
